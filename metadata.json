@@ -1,0 +1,8 @@
+{
+  "name": "CI Learning Hub",
+  "description": "A customized learning platform for research departments to embrace AI technologies, featuring course recommendations, progress tracking, and peer feedback.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
