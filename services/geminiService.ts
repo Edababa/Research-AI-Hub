@@ -2,15 +2,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Course, User } from "../types";
 
-// Always use process.env.API_KEY directly as per guidelines.
-// It is assumed to be pre-configured and valid in the environment.
-
 /**
  * Gets personalized course recommendations based on user profile.
  */
 export const getAIRecommendations = async (user: User, allCourses: Course[]) => {
-  // Create a new GoogleGenAI instance right before making an API call to ensure it uses the latest key.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use process.env.API_KEY directly. The shim in index.html ensures 'process' exists.
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return [];
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     Based on this researcher's profile:
@@ -51,11 +51,11 @@ export const getAIRecommendations = async (user: User, allCourses: Course[]) => 
         },
       },
     });
-    // The text property returns the extracted string output. Do not call as a method.
+    
     const text = response.text;
     return JSON.parse(text || '[]');
   } catch (error) {
-    console.error("Gemini Error in getAIRecommendations:", error);
+    console.error("Gemini Error:", error);
     return [];
   }
 };
@@ -64,8 +64,10 @@ export const getAIRecommendations = async (user: User, allCourses: Course[]) => 
  * Generates a motivational nudge message for a user.
  */
 export const generateReminderMessage = async (user: User, pendingCourse: Course) => {
-  // Create a new GoogleGenAI instance right before making an API call.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return `Hi ${user.name}, don't forget to check back on ${pendingCourse.title}!`;
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     The researcher ${user.name} has the course "${pendingCourse.title}" marked as "in-progress" or "not-started".
@@ -78,10 +80,8 @@ export const generateReminderMessage = async (user: User, pendingCourse: Course)
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
-    // Accessing .text property directly as per Google GenAI SDK guidelines.
     return response.text || `Hi ${user.name}, don't forget to check back on ${pendingCourse.title}!`;
   } catch (error) {
-    console.error("Gemini Error in generateReminderMessage:", error);
     return `Hi ${user.name}, don't forget to check back on ${pendingCourse.title} when you have a moment!`;
   }
 };
