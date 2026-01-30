@@ -1,28 +1,21 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Course, User } from "../types";
 
-/**
- * Gets personalized course recommendations based on user profile.
- */
 export const getAIRecommendations = async (user: User, allCourses: Course[]) => {
-  // Use process.env.API_KEY directly. The shim in index.html ensures 'process' exists.
   const apiKey = process.env.API_KEY;
   if (!apiKey) return [];
-
+  
+  // Use the correct initialization pattern
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
-    Based on this researcher's profile:
-    Name: ${user.name}
-    Interests: ${user.interests.join(', ')}
-    Learning History: ${JSON.stringify(user.history)}
-
-    And available courses:
-    ${JSON.stringify(allCourses.map(c => ({ id: c.id, title: c.title, cat: c.category })))}
-
-    Please recommend the top 2 courses for this user. 
-    Explain briefly why in a helpful, encouraging tone.
+    Researcher Name: ${user.name}
+    Interests: ${user.interests.join(", ")}
+    Completed Courses: ${user.history.filter(h => h.status === 'fully-completed').length}
+    Available Courses: ${JSON.stringify(allCourses.map(c => ({ id: c.id, title: c.title, category: c.category, level: c.level })))}
+    
+    Recommend 2 courses that best fit this researcher's profile. Explain why in a professional, motivating tone. 
+    Return JSON only.
   `;
 
   try {
@@ -36,52 +29,38 @@ export const getAIRecommendations = async (user: User, allCourses: Course[]) => 
           items: {
             type: Type.OBJECT,
             properties: {
-              courseId: {
-                type: Type.STRING,
-                description: 'The ID of the recommended course.',
-              },
-              reason: {
-                type: Type.STRING,
-                description: 'The reason why this course is recommended for the user.',
-              },
+              courseId: { type: Type.STRING },
+              reason: { type: Type.STRING }
             },
-            propertyOrdering: ["courseId", "reason"],
-            required: ["courseId", "reason"],
-          },
-        },
-      },
+            required: ["courseId", "reason"]
+          }
+        }
+      }
     });
-    
+    // Access the property .text directly
     const text = response.text;
-    return JSON.parse(text || '[]');
-  } catch (error) {
-    console.error("Gemini Error:", error);
+    return JSON.parse(text || "[]");
+  } catch (e) {
+    console.error("AI Recommendation Error:", e);
     return [];
   }
 };
 
-/**
- * Generates a motivational nudge message for a user.
- */
-export const generateReminderMessage = async (user: User, pendingCourse: Course) => {
+export const getAINudge = async (user: User, course: Course) => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) return `Hi ${user.name}, don't forget to check back on ${pendingCourse.title}!`;
-
+  if (!apiKey) return `Hi ${user.name}, don't forget to check back on ${course.title}!`;
+  
   const ai = new GoogleGenAI({ apiKey });
 
-  const prompt = `
-    The researcher ${user.name} has the course "${pendingCourse.title}" marked as "in-progress" or "not-started".
-    Write a short, professional, yet motivating reminder "nudge" for them to continue their learning journey. 
-    Keep it under 30 words.
-  `;
-
+  const prompt = `Write a short, motivating 15-word nudge for a researcher named ${user.name} to continue their "${course.title}" course which is currently in-progress.`;
+  
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
+      contents: prompt
     });
-    return response.text || `Hi ${user.name}, don't forget to check back on ${pendingCourse.title}!`;
-  } catch (error) {
-    return `Hi ${user.name}, don't forget to check back on ${pendingCourse.title} when you have a moment!`;
+    return response.text || "Ready to continue your learning journey?";
+  } catch (e) {
+    return "Let's push the boundaries of AI together. Ready to resume?";
   }
 };

@@ -1,26 +1,28 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Course, User, AppState, CompletionStatus } from './types';
-import { INITIAL_COURSES, MOCK_USERS } from './constants';
+import { Course, User, CompletionStatus, Feedback } from './types';
+import { INITIAL_COURSES, MOCK_USERS } from './constants.tsx';
 
-interface StoreContextType extends AppState {
+interface AppState {
+  courses: Course[];
+  users: User[];
+  currentUser: User | null;
   login: (email: string) => void;
   logout: () => void;
   addCourse: (course: Partial<Course>) => void;
-  removeCourse: (courseId: string) => void;
-  updateCourseStatus: (courseId: string, status: CompletionStatus) => void;
-  addRatingAndComment: (courseId: string, rating: number, comment: string) => void;
-  updateUserRole: (userId: string, newRole: 'researcher' | 'admin') => void;
+  deleteCourse: (id: string) => void;
+  updateStatus: (courseId: string, status: CompletionStatus) => void;
+  addFeedback: (courseId: string, rating: number, comment: string) => void;
+  setRole: (userId: string, role: 'admin' | 'researcher') => void;
 }
 
-const StoreContext = createContext<StoreContextType | undefined>(undefined);
+const StoreContext = createContext<AppState | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [courses, setCourses] = useState<Course[]>(() => {
     const saved = localStorage.getItem('ra_courses');
     return saved ? JSON.parse(saved) : INITIAL_COURSES;
   });
-
+  
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('ra_users');
     return saved ? JSON.parse(saved) : MOCK_USERS;
@@ -31,133 +33,135 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? JSON.parse(saved) : null;
   });
 
-  useEffect(() => {
-    localStorage.setItem('ra_courses', JSON.stringify(courses));
-  }, [courses]);
-
-  useEffect(() => {
-    localStorage.setItem('ra_users', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem('ra_currentUser', JSON.stringify(currentUser));
-  }, [currentUser]);
+  useEffect(() => localStorage.setItem('ra_courses', JSON.stringify(courses)), [courses]);
+  useEffect(() => localStorage.setItem('ra_users', JSON.stringify(users)), [users]);
+  useEffect(() => localStorage.setItem('ra_currentUser', JSON.stringify(currentUser)), [currentUser]);
 
   const login = (email: string) => {
-    const user = users.find(u => u.email === email);
-    if (user) setCurrentUser(user);
-    else {
-      // Create new researcher if not found (simulated guest login)
-      const newUser: User = {
+    let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) {
+      user = {
         id: `u_${Date.now()}`,
-        name: email.split('@')[0],
-        email: email,
-        role: 'researcher',
-        interests: ['General AI'],
-        history: []
+        email,
+        name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
+        role: users.length === 0 ? 'admin' : 'researcher',
+        points: 0,
+        history: [],
+        interests: ['AI Agents', 'Large Language Models']
       };
-      setUsers(prev => [...prev, newUser]);
-      setCurrentUser(newUser);
+      setUsers(prev => [...prev, user!]);
     }
+    setCurrentUser(user);
   };
 
   const logout = () => setCurrentUser(null);
 
-  const addCourse = (courseData: Partial<Course>) => {
+  const addCourse = (data: Partial<Course>) => {
+    if (!currentUser) return;
     const newCourse: Course = {
       id: `c_${Date.now()}`,
-      title: courseData.title || 'Untitled',
-      description: courseData.description || '',
-      category: courseData.category || 'General',
-      level: courseData.level || 'Beginner',
-      instructor: courseData.instructor || 'Unknown',
-      link: courseData.link || '#',
-      isOnline: courseData.isOnline ?? true,
+      title: data.title || 'Untitled Course',
+      description: data.description || '',
+      link: data.link || '',
+      category: data.category || 'General',
+      type: data.type || 'online',
+      level: data.level || 'Beginner',
+      instructor: data.instructor || currentUser.name,
+      isOnline: data.isOnline ?? true,
       rating: 0,
       ratingsCount: 0,
-      comments: [],
-      postedBy: currentUser?.id || 'anonymous',
-      createdAt: new Date().toISOString()
+      postedBy: currentUser.id,
+      postedByName: currentUser.name,
+      createdAt: new Date().toISOString(),
+      feedbacks: [],
+      avgRating: 0
     };
     setCourses(prev => [newCourse, ...prev]);
+    updateUserPoints(currentUser.id, 5); // Reward for sharing
   };
 
-  const removeCourse = (courseId: string) => {
+  const deleteCourse = (id: string) => {
     if (currentUser?.role !== 'admin') return;
-    setCourses(prev => prev.filter(c => c.id !== courseId));
+    setCourses(prev => prev.filter(c => c.id !== id));
   };
 
-  const updateCourseStatus = (courseId: string, status: CompletionStatus) => {
+  const updateStatus = (courseId: string, status: CompletionStatus) => {
     if (!currentUser) return;
     const now = new Date().toISOString();
-    const updatedUser = { ...currentUser };
-    const historyIndex = updatedUser.history.findIndex(h => h.courseId === courseId);
+    
+    setUsers(prevUsers => {
+      const updatedUsers = prevUsers.map(u => {
+        if (u.id === currentUser.id) {
+          const history = [...u.history];
+          const idx = history.findIndex(h => h.courseId === courseId);
+          
+          const wasCompleted = idx > -1 && history[idx].status === 'fully-completed';
+          const isCompleted = status === 'fully-completed';
+          let points = u.points;
 
-    if (historyIndex > -1) {
-      updatedUser.history[historyIndex] = { courseId, status, updatedAt: now };
-    } else {
-      updatedUser.history.push({ courseId, status, updatedAt: now });
-    }
+          if (idx > -1) {
+            history[idx] = { courseId, status, updatedAt: now };
+          } else {
+            history.push({ courseId, status, updatedAt: now });
+          }
 
-    setCurrentUser(updatedUser);
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+          if (!wasCompleted && isCompleted) points += 10;
+          
+          const updated = { ...u, history, points };
+          if (u.id === currentUser.id) setCurrentUser(updated);
+          return updated;
+        }
+        return u;
+      });
+      return updatedUsers;
+    });
   };
 
-  const addRatingAndComment = (courseId: string, rating: number, comment: string) => {
+  const addFeedback = (courseId: string, rating: number, comment: string) => {
     if (!currentUser) return;
-    setCourses(prev => prev.map(course => {
-      if (course.id === courseId) {
-        const newTotal = course.rating * course.ratingsCount + rating;
-        const newCount = course.ratingsCount + 1;
-        const newComments = comment ? [
-          ...course.comments,
-          {
-            id: `com_${Date.now()}`,
-            userId: currentUser.id,
-            userName: currentUser.name,
-            text: comment,
-            timestamp: new Date().toISOString()
-          }
-        ] : course.comments;
-
-        return {
-          ...course,
-          rating: Number((newTotal / newCount).toFixed(1)),
-          ratingsCount: newCount,
-          comments: newComments
+    setCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        const newFeedback: Feedback = {
+          id: `f_${Date.now()}`,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          rating,
+          comment,
+          timestamp: new Date().toISOString()
+        };
+        const feedbacks = [...c.feedbacks, newFeedback];
+        const avg = feedbacks.reduce((acc, curr) => acc + curr.rating, 0) / feedbacks.length;
+        return { 
+          ...c, 
+          feedbacks, 
+          avgRating: Number(avg.toFixed(1)),
+          rating: Number(avg.toFixed(1)),
+          ratingsCount: feedbacks.length
         };
       }
-      return course;
+      return c;
     }));
   };
 
-  const updateUserRole = (userId: string, newRole: 'researcher' | 'admin') => {
+  const setRole = (userId: string, role: 'admin' | 'researcher') => {
     if (currentUser?.role !== 'admin') return;
-
-    const currentAdmins = users.filter(u => u.role === 'admin');
-    if (newRole === 'admin' && currentAdmins.length >= 10) {
-      alert("Maximum of 10 admin users allowed.");
+    const admins = users.filter(u => u.role === 'admin');
+    if (role === 'admin' && admins.length >= 10) {
+      alert("Maximum 10 admins allowed.");
       return;
     }
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u));
+  };
 
-    if (newRole === 'researcher' && userId === currentUser.id && currentAdmins.length === 1) {
-      alert("Cannot demote the last remaining admin.");
-      return;
-    }
-
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-    
-    // Sync current user state if they changed their own role
-    if (userId === currentUser.id) {
-      setCurrentUser(prev => prev ? { ...prev, role: newRole } : null);
+  const updateUserPoints = (userId: string, amount: number) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, points: u.points + amount } : u));
+    if (currentUser?.id === userId) {
+      setCurrentUser(prev => prev ? { ...prev, points: prev.points + amount } : null);
     }
   };
 
   return (
-    <StoreContext.Provider value={{
-      courses, users, currentUser,
-      login, logout, addCourse, removeCourse, updateCourseStatus, addRatingAndComment, updateUserRole
-    }}>
+    <StoreContext.Provider value={{ courses, users, currentUser, login, logout, addCourse, deleteCourse, updateStatus, addFeedback, setRole }}>
       {children}
     </StoreContext.Provider>
   );
@@ -165,6 +169,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 export const useStore = () => {
   const context = useContext(StoreContext);
-  if (!context) throw new Error("useStore must be used within a StoreProvider");
+  if (!context) throw new Error("useStore must be used within StoreProvider");
   return context;
 };

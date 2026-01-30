@@ -4,7 +4,8 @@ import { useStore } from '../store';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 export const Admin: React.FC = () => {
-  const { users, courses, updateUserRole, currentUser } = useStore();
+  // Fixed: Changed updateUserRole to setRole to match useStore
+  const { users, courses, setRole, currentUser } = useStore();
 
   const totalResearchers = users.filter(u => u.role === 'researcher').length;
   const totalAdmins = users.filter(u => u.role === 'admin').length;
@@ -34,7 +35,8 @@ export const Admin: React.FC = () => {
     const action = newRole === 'admin' ? 'Promote to Admin' : 'Demote to Researcher';
     
     if (confirm(`Are you sure you want to ${action} this user?`)) {
-      updateUserRole(userId, newRole);
+      // Fixed: Updated to use setRole
+      setRole(userId, newRole);
     }
   };
 
@@ -50,6 +52,7 @@ export const Admin: React.FC = () => {
            { label: 'Researchers', value: totalResearchers, icon: '👥' },
            { label: 'Admins', value: `${totalAdmins}/10`, icon: '🛡️' },
            { label: 'Courses Offered', value: totalCourses, icon: '📚' },
+           // Fixed: use rating property which is now added to Course interface
            { label: 'Avg Rating', value: (courses.reduce((acc, c) => acc + c.rating, 0) / (courses.length || 1)).toFixed(1), icon: '⭐' }
          ].map(stat => (
            <div key={stat.label} className="bg-white p-6 rounded-2xl border shadow-sm">

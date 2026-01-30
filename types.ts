@@ -1,11 +1,12 @@
 
 export type CompletionStatus = 'not-started' | 'in-progress' | 'partially-completed' | 'fully-completed';
 
-export interface Comment {
+export interface Feedback {
   id: string;
   userId: string;
   userName: string;
-  text: string;
+  rating: number;
+  comment: string;
   timestamp: string;
 }
 
@@ -13,16 +14,20 @@ export interface Course {
   id: string;
   title: string;
   description: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  instructor: string;
   link: string;
+  category: string;
+  type: 'online' | 'offline';
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  // Fixed: Added missing properties used in components and constants
+  instructor: string;
   isOnline: boolean;
   rating: number;
   ratingsCount: number;
-  comments: Comment[];
-  postedBy: string;
+  postedBy: string; // UserId
+  postedByName: string;
   createdAt: string;
+  feedbacks: Feedback[];
+  avgRating: number;
 }
 
 export interface UserProgress {
@@ -36,12 +41,7 @@ export interface User {
   name: string;
   email: string;
   role: 'researcher' | 'admin';
-  interests: string[];
+  points: number;
   history: UserProgress[];
-}
-
-export interface AppState {
-  courses: Course[];
-  users: User[];
-  currentUser: User | null;
+  interests: string[];
 }

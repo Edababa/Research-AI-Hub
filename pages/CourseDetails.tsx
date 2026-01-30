@@ -7,7 +7,8 @@ import { CompletionStatus } from '../types';
 export const CourseDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { courses, currentUser, updateCourseStatus, addRatingAndComment, removeCourse } = useStore();
+  // Fixed: Updated to use correct method names from useStore
+  const { courses, currentUser, updateStatus, addFeedback, deleteCourse } = useStore();
   const course = courses.find(c => c.id === id);
   const userHistory = currentUser?.history.find(h => h.courseId === id);
 
@@ -18,20 +19,23 @@ export const CourseDetails: React.FC = () => {
   if (!course) return <div className="p-12 text-center text-slate-500">Course not found</div>;
 
   const handleStatusChange = (status: CompletionStatus) => {
-    updateCourseStatus(course.id, status);
+    // Fixed: Use correct status update method
+    updateStatus(course.id, status);
   };
 
   const handleFeedback = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    addRatingAndComment(course.id, rating, comment);
+    // Fixed: Use correct feedback method
+    addFeedback(course.id, rating, comment);
     setComment('');
     setIsSubmitting(false);
   };
 
   const handleDelete = () => {
     if (confirm(`Are you sure you want to permanently delete "${course.title}"? This action cannot be undone.`)) {
-      removeCourse(course.id);
+      // Fixed: Use correct delete method
+      deleteCourse(course.id);
       navigate('/courses');
     }
   };
@@ -161,23 +165,25 @@ export const CourseDetails: React.FC = () => {
         </form>
 
         <div className="space-y-6">
-          {course.comments.length === 0 ? (
+          {/* Fixed: Changed property name to feedbacks to match Course interface */}
+          {course.feedbacks.length === 0 ? (
             <p className="text-center text-slate-400 py-8 italic">No comments yet. Be the first to share your experience!</p>
           ) : (
-            course.comments.map((c) => (
-              <div key={c.id} className="border-b pb-6 last:border-0">
+            course.feedbacks.map((f) => (
+              <div key={f.id} className="border-b pb-6 last:border-0">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs mr-3">
-                      {c.userName.charAt(0)}
+                      {f.userName.charAt(0)}
                     </div>
                     <div>
-                      <span className="block font-bold text-slate-900 text-sm">{c.userName}</span>
-                      <span className="text-xs text-slate-500">{new Date(c.timestamp).toLocaleDateString()}</span>
+                      <span className="block font-bold text-slate-900 text-sm">{f.userName}</span>
+                      <span className="text-xs text-slate-500">{new Date(f.timestamp).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
-                <p className="text-slate-600 leading-relaxed pl-11">{c.text}</p>
+                {/* Fixed: Use comment property from Feedback interface */}
+                <p className="text-slate-600 leading-relaxed pl-11">{f.comment}</p>
               </div>
             ))
           )}

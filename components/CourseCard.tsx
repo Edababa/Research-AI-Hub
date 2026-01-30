@@ -10,7 +10,8 @@ interface Props {
 }
 
 export const CourseCard: React.FC<Props> = ({ course, status }) => {
-  const { updateCourseStatus, removeCourse, currentUser } = useStore();
+  // Fixed: Updated to use correct function names from useStore
+  const { updateStatus, deleteCourse, currentUser } = useStore();
 
   const getStatusColor = (s?: CompletionStatus) => {
     switch (s) {
@@ -30,7 +31,8 @@ export const CourseCard: React.FC<Props> = ({ course, status }) => {
     e.preventDefault();
     e.stopPropagation();
     if (confirm(`Are you sure you want to remove "${course.title}"?`)) {
-      removeCourse(course.id);
+      // Fixed: Use correct delete method
+      deleteCourse(course.id);
     }
   };
 

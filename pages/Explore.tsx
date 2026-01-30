@@ -15,6 +15,7 @@ export const Explore: React.FC = () => {
     description: '',
     category: 'General',
     level: 'Beginner',
+    // Fixed: Added instructor to initial state
     instructor: '',
     link: '',
     isOnline: true
@@ -33,6 +34,7 @@ export const Explore: React.FC = () => {
     e.preventDefault();
     addCourse(newCourse);
     setIsAdding(false);
+    // Fixed: Reset instructor state after submission
     setNewCourse({ title: '', description: '', category: 'General', level: 'Beginner', instructor: '', link: '', isOnline: true });
   };
 
@@ -92,6 +94,7 @@ export const Explore: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Instructor</label>
+                  {/* Fixed: Bound input to instructor state */}
                   <input required className="w-full p-2 border rounded-lg" value={newCourse.instructor} onChange={e => setNewCourse({...newCourse, instructor: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">

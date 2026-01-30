@@ -11,11 +11,15 @@ export const INITIAL_COURSES: Course[] = [
     instructor: 'Dr. Sarah Chen',
     link: 'https://example.com/llm-101',
     isOnline: true,
+    // Fixed: Added missing required properties
+    type: 'online',
     rating: 4.8,
     ratingsCount: 15,
-    comments: [],
+    feedbacks: [],
     postedBy: 'system',
-    createdAt: '2024-01-01'
+    postedByName: 'System',
+    createdAt: '2024-01-01',
+    avgRating: 4.8
   },
   {
     id: '2',
@@ -26,11 +30,15 @@ export const INITIAL_COURSES: Course[] = [
     instructor: 'Marc Thompson',
     link: 'https://example.com/agents',
     isOnline: true,
+    // Fixed: Added missing required properties
+    type: 'online',
     rating: 4.5,
     ratingsCount: 8,
-    comments: [],
+    feedbacks: [],
     postedBy: 'system',
-    createdAt: '2024-01-15'
+    postedByName: 'System',
+    createdAt: '2024-01-15',
+    avgRating: 4.5
   },
   {
     id: '3',
@@ -41,11 +49,15 @@ export const INITIAL_COURSES: Course[] = [
     instructor: 'Elena Rodriguez',
     link: 'https://example.com/prompt-eng',
     isOnline: true,
+    // Fixed: Added missing required properties
+    type: 'online',
     rating: 4.9,
     ratingsCount: 22,
-    comments: [],
+    feedbacks: [],
     postedBy: 'system',
-    createdAt: '2024-02-10'
+    postedByName: 'System',
+    createdAt: '2024-02-10',
+    avgRating: 4.9
   },
   {
     id: '4',
@@ -56,11 +68,15 @@ export const INITIAL_COURSES: Course[] = [
     instructor: 'Department Ethics Board',
     link: 'Conference Room B',
     isOnline: false,
+    // Fixed: Added missing required properties
+    type: 'offline',
     rating: 4.2,
     ratingsCount: 5,
-    comments: [],
+    feedbacks: [],
     postedBy: 'system',
-    createdAt: '2024-03-01'
+    postedByName: 'System',
+    createdAt: '2024-03-01',
+    avgRating: 4.2
   }
 ];
 
@@ -70,6 +86,8 @@ export const MOCK_USERS: User[] = [
     name: 'Researcher Alice',
     email: 'alice@research.com',
     role: 'researcher',
+    // Fixed: Added missing required points property
+    points: 10,
     interests: ['NLP', 'Computer Vision'],
     history: [
       { courseId: '1', status: 'fully-completed', updatedAt: '2024-02-01' },
@@ -81,6 +99,8 @@ export const MOCK_USERS: User[] = [
     name: 'Admin Bob',
     email: 'bob@research.com',
     role: 'admin',
+    // Fixed: Added missing required points property
+    points: 50,
     interests: [],
     history: []
   }
